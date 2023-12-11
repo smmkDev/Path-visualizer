@@ -2,8 +2,8 @@
 #include<windows.h>
 #include<vector>
 #include<math.h>
-#include<SDL.h>
-#include<SDL_image.h>
+#include<SDL2/SDL.h>
+#include<SDL2/SDL_image.h>
 #define MAX_WIDTH 500
 #define MAX_HEIGHT 500
 using namespace std;
@@ -143,6 +143,11 @@ class Node
 		{
 		    return pred_y;
 		}
+
+		float get_cost()
+		{
+		    return cost;
+		}
 };
 
 class Queue
@@ -248,12 +253,13 @@ class Queue
 
         Node* get_min(Cell **grid)
         {
+            display();
+            cout<< endl;
             Node *min_1 = dequeue();
             Node *min_2 = dequeue();
-            while(!is_empty())
+            while(min_2 != NULL)
             {
-                if(grid[min_2->pos_x][min_2->pos_y].get_cost() < grid[min_1->pos_x][min_1->pos_y].get_cost() &&
-                   !grid[min_2->pos_x][min_2->pos_y].get_is_wall())
+                if(grid[min_2->pos_x][min_2->pos_y].get_cost() <= grid[min_1->pos_x][min_1->pos_y].get_cost())
                 {
                     min_1 = min_2;
                 }
@@ -334,7 +340,7 @@ class PathFinder
                     break;
                 }
                 add_neighbours(current_node->get_x(), current_node->get_y(), window_surface, window);
-                Sleep(1000);
+                Sleep(500);
             }
             while(current_node != NULL);
             display_visited(window_surface, window);
@@ -348,7 +354,7 @@ class PathFinder
         void add_neighbours(int i, int j, SDL_Surface *window_surface, SDL_Window *window)
         {
             SDL_Rect rect;
-            if(i + 1 < rows && j < cols)
+            if(i + 1 < rows && j < cols && !is_visited(i + 1, j))
             {
                 neighbours->enqueue(i + 1, j, i, j);
                 grid[i + 1][j].set_surface("square3.png");
@@ -357,7 +363,7 @@ class PathFinder
                 SDL_BlitSurface(grid[i + 1][j].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
-            if(i + 1 < rows && j + 1 < cols)
+            if(i + 1 < rows && j + 1 < cols && !is_visited(i + 1, j + 1))
             {
                 neighbours->enqueue(i + 1, j + 1, i, j);
                 grid[i + 1][j + 1].set_surface("square3.png");
@@ -366,7 +372,7 @@ class PathFinder
                 SDL_BlitSurface(grid[i + 1][j + 1].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
-            if(i + 1 < rows && j - 1 > 0)
+            if(i + 1 < rows && j - 1 >= 0 && !is_visited(i + 1, j - 1))
             {
                 neighbours->enqueue(i + 1, j - 1, i, j);
                 grid[i + 1][j - 1].set_surface("square3.png");
@@ -375,7 +381,7 @@ class PathFinder
                 SDL_BlitSurface(grid[i + 1][j - 1].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
-            if(i - 1 > 0 && j - 1 > 0)
+            if(i - 1 >= 0 && j - 1 >= 0 && !is_visited(i - 1, j - 1))
             {
                 neighbours->enqueue(i - 1, j - 1, i, j);
                 grid[i - 1][j - 1].set_surface("square3.png");
@@ -384,16 +390,16 @@ class PathFinder
                 SDL_BlitSurface(grid[i - 1][j - 1].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
-            if(i - 1 > 0 && j + 1 < cols)
+            if(i - 1 >= 0 && j + 1 < cols && !is_visited(i - 1, j + 1))
             {
                 neighbours->enqueue(i - 1, j + 1, i, j);
                 grid[i - 1][j + 1].set_surface("square3.png");
                 rect.x = grid[i - 1][j + 1].get_start_x();
                 rect.y = grid[i - 1][j + 1].get_start_y();
-                SDL_BlitSurface(grid[i + 1][j].get_surface(), NULL, window_surface, &rect);
+                SDL_BlitSurface(grid[i - 1][j + 1].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
-            if(i < rows && j + 1 < cols)
+            if(i < rows && j + 1 < cols && !is_visited(i, j + 1))
             {
                 neighbours->enqueue(i, j + 1, i, j);
                 grid[i][j + 1].set_surface("square3.png");
@@ -402,7 +408,7 @@ class PathFinder
                 SDL_BlitSurface(grid[i][j + 1].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
-            if(i - 1 > 0 && j < cols)
+            if(i - 1 >= 0 && j < cols && !is_visited(i - 1, j))
             {
                 neighbours->enqueue(i - 1, j, i, j);
                 grid[i - 1][j].set_surface("square3.png");
@@ -411,7 +417,7 @@ class PathFinder
                 SDL_BlitSurface(grid[i - 1][j].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
-            if(i < rows && j - 1 > 0)
+            if(i < rows && j - 1 >= 0 && !is_visited(i, j - 1))
             {
                 neighbours->enqueue(i, j - 1, i, j);
                 grid[i][j - 1].set_surface("square3.png");
@@ -424,6 +430,7 @@ class PathFinder
 
         bool is_target(Node *v1)
         {
+
             return v1->get_x() == target[0] && v1->get_y() == target[1];
         }
 
