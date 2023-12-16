@@ -2,10 +2,13 @@
 #include<windows.h>
 #include<vector>
 #include<math.h>
+#include<node.h>
+#include<queue.h>
 #include<SDL2/SDL.h>
 #include<SDL2/SDL_image.h>
-#define MAX_WIDTH 500
-#define MAX_HEIGHT 500
+
+#define MAX_WIDTH 594
+#define MAX_HEIGHT 594
 using namespace std;
 
 class Cell
@@ -15,25 +18,18 @@ class Cell
     int finish_x;
     int start_y;
     int finish_y;
-    float cost;
     bool is_wall;
 
     public:
 
-        Cell(string s="square2.png", int st_x=0, int fin_x=0, int st_y=0, int fin_y=0, float c=0)
+        Cell(string s="square2.png", int st_x=0, int fin_x=0, int st_y=0, int fin_y=0)
         {
             img = IMG_Load(s.c_str());
             start_x = st_x;
             finish_x = fin_x;
             start_y = st_y;
             finish_y = fin_y;
-            cost = c;
             is_wall = false;
-        }
-
-        void set_cost(float c)
-        {
-            cost = c;
         }
 
         void set_start_x(int st_x)
@@ -91,181 +87,9 @@ class Cell
             return finish_y;
         }
 
-        float get_cost()
-        {
-            return cost;
-        }
-
         SDL_Surface *get_surface()
         {
             return img;
-        }
-};
-
-class Node
-{
-	public:
-
-		int pos_x, pos_y;
-		int pred_x, pred_y;
-		float cost;
-		Node* next;
-
-		Node()
-		{
-			next = NULL;
-		}
-
-		Node(int x, int y, int x1, int y1, float c=0)
-		{
-			pos_x = x; pos_y = y;
-			pred_x = x1; pred_y = y1;
-			cost = c;
-			next = NULL;
-		}
-
-		int get_x()
-		{
-		    return pos_x;
-		}
-
-		int get_y()
-		{
-		    return pos_y;
-		}
-
-		int get_pred_x()
-		{
-		    return pred_x;
-		}
-
-		int get_pred_y()
-		{
-		    return pred_y;
-		}
-
-		float get_cost()
-		{
-		    return cost;
-		}
-};
-
-class Queue
-{
-    Node *front;
-    Node *rear;
-    int size;
-    int capacity;
-
-    public:
-
-        Queue(int s=0)
-        {
-            size = s;
-            capacity = 0;
-            front = NULL;
-            rear = NULL;
-        }
-
-        bool is_empty()
-        {
-            return front == NULL;
-        }
-
-        bool is_full()
-        {
-            return capacity == size;
-        }
-
-        void enqueue(int pos_x, int pos_y, int pred_x, int pred_y)
-        {
-            if(!is_full())
-            {
-                Node *new_node = new Node(pos_x, pos_y, pred_x, pred_y);
-                if(front == NULL)
-                {
-                    front = rear = new_node;
-                }
-                else
-                {
-                    rear->next = new_node;
-                    rear = rear->next;
-                }
-                capacity++;
-            }
-        }
-
-        Node *peek()
-        {
-            return front;
-        }
-
-        Node *get_rear()
-        {
-            return rear;
-        }
-
-        Node *dequeue()
-        {
-            if(!is_empty())
-            {
-                Node *temp = front;
-                front = front -> next;
-                capacity--;
-                return temp;
-            }
-            return NULL;
-        }
-
-        int get_size()
-        {
-            return size;
-        }
-
-        int get_capacity()
-        {
-            return capacity;
-        }
-
-        bool find(int x, int y)
-        {
-            Node *itr = front;
-            while(itr != NULL)
-            {
-                if(itr->get_x() == x && itr->get_y() == y)
-                {
-                    return true;
-                }
-                itr = itr->next;
-            }
-            return false;
-        }
-
-        void display()
-        {
-            Node *itr = front;
-            while(itr != NULL)
-            {
-                cout<< "("<< itr->pos_x << "," << itr->pos_y << ")" << "";
-                itr = itr->next;
-            }
-        }
-
-        Node* get_min(Cell **grid)
-        {
-            display();
-            cout<< endl;
-            Node *min_1 = dequeue();
-            Node *min_2 = dequeue();
-            while(min_2 != NULL)
-            {
-                if(grid[min_2->pos_x][min_2->pos_y].get_cost() <= grid[min_1->pos_x][min_1->pos_y].get_cost())
-                {
-                    min_1 = min_2;
-                }
-                min_2 = dequeue();
-            }
-            return min_1;
         }
 };
 
@@ -276,6 +100,7 @@ class PathFinder
     int target[2];
     int rows;
     int cols;
+    bool is_found;
     vector<Node*> visited;
 
     public:
@@ -286,6 +111,7 @@ class PathFinder
         {
             grid = NULL;
             neighbours = NULL;
+            is_found = false;
         }
 
         PathFinder(int r, int c):start{0, 0}, target{11, 11}
@@ -293,11 +119,12 @@ class PathFinder
             grid = new Cell*[r];
             rows = r;
             cols = c;
+            is_found = false;
             for(int i=0; i<rows; i++)
             {
                 grid[i] = new Cell[c];
             }
-            neighbours = new Queue(12);
+            neighbours = new Queue(r*c);
         }
 
         void set_start(int x, int y)
@@ -313,93 +140,26 @@ class PathFinder
             target[1] = y;
         }
 
-        void calc_cost()
-        {
-            for(int i=0; i<rows; i++)
-            {
-                for(int j=0; j<cols; j++)
-                {
-                    grid[i][j].set_cost(sqrt((pow(target[0] - i, 2) + (pow(target[1] - j, 2)))));
-                }
-            }
-        }
-
         void bfs(SDL_Surface *window_surface, SDL_Window *window)
         {
-            calc_cost();
             Node *current_node = NULL;
             do
             {
-                current_node = neighbours->get_min(grid);
+                current_node = neighbours->dequeue();
                 if(!is_visited(current_node->get_x(), current_node->get_y()))
                 {
                     visited.push_back(current_node);
                 }
-                if(is_target(current_node))
-                {
-                    break;
-                }
                 add_neighbours(current_node->get_x(), current_node->get_y(), window_surface, window);
-                Sleep(500);
             }
-            while(current_node != NULL);
+            while(!is_found);
             display_visited(window_surface, window);
-        }
-
-        bool in_range(int num, int range)
-        {
-            return num < range;
         }
 
         void add_neighbours(int i, int j, SDL_Surface *window_surface, SDL_Window *window)
         {
             SDL_Rect rect;
-            if(i + 1 < rows && j < cols && !is_visited(i + 1, j))
-            {
-                neighbours->enqueue(i + 1, j, i, j);
-                grid[i + 1][j].set_surface("square3.png");
-                rect.x = grid[i + 1][j].get_start_x();
-                rect.y = grid[i + 1][j].get_start_y();
-                SDL_BlitSurface(grid[i + 1][j].get_surface(), NULL, window_surface, &rect);
-                SDL_UpdateWindowSurface(window);
-            }
-            if(i + 1 < rows && j + 1 < cols && !is_visited(i + 1, j + 1))
-            {
-                neighbours->enqueue(i + 1, j + 1, i, j);
-                grid[i + 1][j + 1].set_surface("square3.png");
-                rect.x = grid[i + 1][j + 1].get_start_x();
-                rect.y = grid[i + 1][j + 1].get_start_y();
-                SDL_BlitSurface(grid[i + 1][j + 1].get_surface(), NULL, window_surface, &rect);
-                SDL_UpdateWindowSurface(window);
-            }
-            if(i + 1 < rows && j - 1 >= 0 && !is_visited(i + 1, j - 1))
-            {
-                neighbours->enqueue(i + 1, j - 1, i, j);
-                grid[i + 1][j - 1].set_surface("square3.png");
-                rect.x = grid[i + 1][j - 1].get_start_x();
-                rect.y = grid[i + 1][j - 1].get_start_y();
-                SDL_BlitSurface(grid[i + 1][j - 1].get_surface(), NULL, window_surface, &rect);
-                SDL_UpdateWindowSurface(window);
-            }
-            if(i - 1 >= 0 && j - 1 >= 0 && !is_visited(i - 1, j - 1))
-            {
-                neighbours->enqueue(i - 1, j - 1, i, j);
-                grid[i - 1][j - 1].set_surface("square3.png");
-                rect.x = grid[i - 1][j - 1].get_start_x();
-                rect.y = grid[i - 1][j - 1].get_start_y();
-                SDL_BlitSurface(grid[i - 1][j - 1].get_surface(), NULL, window_surface, &rect);
-                SDL_UpdateWindowSurface(window);
-            }
-            if(i - 1 >= 0 && j + 1 < cols && !is_visited(i - 1, j + 1))
-            {
-                neighbours->enqueue(i - 1, j + 1, i, j);
-                grid[i - 1][j + 1].set_surface("square3.png");
-                rect.x = grid[i - 1][j + 1].get_start_x();
-                rect.y = grid[i - 1][j + 1].get_start_y();
-                SDL_BlitSurface(grid[i - 1][j + 1].get_surface(), NULL, window_surface, &rect);
-                SDL_UpdateWindowSurface(window);
-            }
-            if(i < rows && j + 1 < cols && !is_visited(i, j + 1))
+            if(i < rows && j + 1 < cols && !grid[i][j + 1].get_is_wall() && !is_visited(i, j + 1))
             {
                 neighbours->enqueue(i, j + 1, i, j);
                 grid[i][j + 1].set_surface("square3.png");
@@ -408,16 +168,7 @@ class PathFinder
                 SDL_BlitSurface(grid[i][j + 1].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
-            if(i - 1 >= 0 && j < cols && !is_visited(i - 1, j))
-            {
-                neighbours->enqueue(i - 1, j, i, j);
-                grid[i - 1][j].set_surface("square3.png");
-                rect.x = grid[i - 1][j].get_start_x();
-                rect.y = grid[i - 1][j].get_start_y();
-                SDL_BlitSurface(grid[i - 1][j].get_surface(), NULL, window_surface, &rect);
-                SDL_UpdateWindowSurface(window);
-            }
-            if(i < rows && j - 1 >= 0 && !is_visited(i, j - 1))
+            if(i < rows && j - 1 >= 0 && !grid[i][j - 1].get_is_wall() && !is_visited(i, j - 1))
             {
                 neighbours->enqueue(i, j - 1, i, j);
                 grid[i][j - 1].set_surface("square3.png");
@@ -426,17 +177,51 @@ class PathFinder
                 SDL_BlitSurface(grid[i][j - 1].get_surface(), NULL, window_surface, &rect);
                 SDL_UpdateWindowSurface(window);
             }
+            if(i - 1 >= 0 && j < cols && !grid[i - 1][j].get_is_wall() && !is_visited(i - 1, j))
+            {
+                neighbours->enqueue(i - 1, j, i, j);
+                grid[i - 1][j].set_surface("square3.png");
+                rect.x = grid[i - 1][j].get_start_x();
+                rect.y = grid[i - 1][j].get_start_y();
+                SDL_BlitSurface(grid[i - 1][j].get_surface(), NULL, window_surface, &rect);
+                SDL_UpdateWindowSurface(window);
+            }
+            if(i + 1 < rows && j < cols && !grid[i + 1][j].get_is_wall() && !is_visited(i + 1, j))
+            {
+                neighbours->enqueue(i + 1, j, i, j);
+                grid[i + 1][j].set_surface("square3.png");
+                rect.x = grid[i + 1][j].get_start_x();
+                rect.y = grid[i + 1][j].get_start_y();
+                SDL_BlitSurface(grid[i + 1][j].get_surface(), NULL, window_surface, &rect);
+                SDL_UpdateWindowSurface(window);
+            }
         }
 
-        bool is_target(Node *v1)
+        bool is_target(int x, int y)
         {
+            return x == target[0] && y == target[1];
+        }
 
-            return v1->get_x() == target[0] && v1->get_y() == target[1];
+        Node* get_node(int pre_x, int pre_y)
+        {
+            for(int i=0; i<int(visited.size()); i++)
+            {
+                if(visited[i]->get_x() == pre_x && visited[i]->get_y() == pre_y)
+                {
+                    return visited[i];
+                }
+            }
+            return NULL;
         }
 
         bool is_visited(int x, int y)
         {
-            for(int i=0; i<visited.size(); i++)
+            if(is_target(x, y))
+            {
+                is_found = true;
+                return true;
+            }
+            for(int i=0; i<int(visited.size()); i++)
             {
                 if(visited[i]->get_x() == x && visited[i]->get_y() == y)
                 {
@@ -449,14 +234,16 @@ class PathFinder
        void display_visited(SDL_Surface *window_surface, SDL_Window *window)
        {
            SDL_Rect rect;
-           for(int i=0; i<visited.size(); i++)
+           Node* itr = visited[visited.size() - 1];
+           while(itr->get_x() != start[0] || itr->get_y() != start[1])
            {
-                grid[visited[i]->get_x()][visited[i]->get_y()].set_surface("square6.png");
-                rect.x = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_x();
-                rect.y = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_y();
-                SDL_BlitSurface(grid[visited[i]->get_x()][visited[i]->get_y()].get_surface(), NULL, window_surface,&rect);
+                grid[itr->get_x()][itr->get_y()].set_surface("square6.png");
+                rect.x = grid[itr->get_x()][itr->get_y()].get_start_x();
+                rect.y = grid[itr->get_x()][itr->get_y()].get_start_y();
+                SDL_BlitSurface(grid[itr->get_x()][itr->get_y()].get_surface(), NULL, window_surface,&rect);
                 SDL_UpdateWindowSurface(window);
-                Sleep(1000);
+                itr = get_node(itr->get_pred_x(), itr->get_pred_y());
+                Sleep(100);
            }
        }
 
@@ -485,8 +272,8 @@ class Visualizer
         {
             pv = new PathFinder(rows, cols);
             window = SDL_CreateWindow("Path Visualizer",
-                                      100,
-                                      100,
+                                      55,
+                                      55,
                                       MAX_WIDTH,
                                       MAX_HEIGHT,
                                       0
@@ -497,7 +284,6 @@ class Visualizer
 
         void create_grid()
         {
-            SDL_Surface *img = IMG_Load("square2.png");
             SDL_Rect cells;
             cells.x = cells.y = 0;
             for(int i=0; i<pv->get_rows(); i++)
@@ -610,7 +396,7 @@ class Visualizer
 
 int main(int argc, char *argv[])
 {
-    Visualizer v(12, 12);
+    Visualizer v(50, 50);
     v.visualize();
     return 0;
 }

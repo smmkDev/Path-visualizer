@@ -1,0 +1,16 @@
+# depslib dependency file v1.0
+1702717303 source:d:\dsaa\pathvisualizer\main.cpp
+	<iostream>
+	<windows.h>
+	<vector>
+	<math.h>
+	<node.h>
+	<queue.h>
+	<SDL2/SDL.h>
+	<SDL2/SDL_image.h>
+
+1702716311 d:\dsaa\pathvisualizer\include\node.h
+
+1702715824 d:\dsaa\pathvisualizer\include\queue.h
+	<node.h>
+
