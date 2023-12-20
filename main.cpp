@@ -93,7 +93,51 @@ class Cell
         }
 };
 
-class PathFinder
+class Stack
+{
+    private:
+
+        Node *top;
+        Node *bottom;
+
+    public:
+
+        Stack()
+        {
+            top = NULL;
+            bottom = NULL;
+        }
+
+        Node *peek()
+        {
+            return top;
+        }
+
+        void push(int pos_x, int pos_y, int pred_x, int pred_y)
+        {
+            Node *new_node = new Node(pos_x, pos_y, pred_x, pred_y);
+            if(top == NULL)
+            {
+                top = new_node;
+                bottom = top;
+            }
+            else
+            {
+              new_node->next = top;
+              top = new_node;
+            }
+        }
+
+        Node* pop()
+        {
+            Node *temp = top;
+            top = top->next;
+            return temp;
+        }
+
+};
+
+class BFS
 {
     Queue *neighbours;
     int start[2];
@@ -107,14 +151,14 @@ class PathFinder
 
         Cell **grid;
 
-        PathFinder()
+        BFS()
         {
             grid = NULL;
             neighbours = NULL;
             is_found = false;
         }
 
-        PathFinder(int r, int c):start{0, 0}, target{11, 11}
+        BFS(int r, int c):start{0, 0}, target{11, 11}
         {
             grid = new Cell*[r];
             rows = r;
@@ -258,9 +302,157 @@ class PathFinder
        }
 };
 
+class DFS
+{
+    Stack *neighbours;
+    int start[2];
+    int target[2];
+    int rows;
+    int cols;
+    bool is_found;
+    vector<Node*> visited;
+
+    public:
+
+        Cell **grid;
+
+        DFS()
+        {
+            grid = NULL;
+            neighbours = NULL;
+            is_found = false;
+        }
+
+        DFS(int r, int c):start{0, 0}, target{11, 11}
+        {
+            grid = new Cell*[r];
+            rows = r;
+            cols = c;
+            is_found = false;
+            for(int i=0; i<rows; i++)
+            {
+                grid[i] = new Cell[c];
+            }
+            neighbours = new Stack;
+        }
+
+        void set_start(int x, int y)
+        {
+            start[0] = x;
+            start[1] = y;
+            neighbours->push(x, y, -1, -1);
+        }
+
+        void set_target(int x, int y)
+        {
+            target[0] = x;
+            target[1] = y;
+        }
+
+        void dfs(SDL_Surface *window_surface, SDL_Window *window)
+        {
+            Node *current_node = NULL;
+            while(!is_found)
+            {
+                current_node = neighbours->pop();
+                if(!is_visited(current_node->get_x(), current_node->get_y()))
+                {
+                    visited.push_back(current_node);
+                }
+                add_neighbours(current_node->get_x(), current_node->get_y(), window_surface, window);
+            }
+        }
+
+        void add_neighbours(int i, int j, SDL_Surface *window_surface, SDL_Window *window)
+        {
+            SDL_Rect rect;
+            if(i - 1 >= 0 && j < cols && !grid[i - 1][j].get_is_wall() && !is_visited(i - 1, j))
+            {
+                neighbours->push(i - 1, j, i, j);
+                grid[i - 1][j].set_surface("square3.png");
+                rect.x = grid[i - 1][j].get_start_x();
+                rect.y = grid[i - 1][j].get_start_y();
+                SDL_BlitSurface(grid[i - 1][j].get_surface(), NULL, window_surface, &rect);
+                SDL_UpdateWindowSurface(window);
+            }
+            if(i + 1 < rows && j < cols && !grid[i + 1][j].get_is_wall() && !is_visited(i + 1, j))
+            {
+                neighbours->push(i + 1, j, i, j);
+                grid[i + 1][j].set_surface("square3.png");
+                rect.x = grid[i + 1][j].get_start_x();
+                rect.y = grid[i + 1][j].get_start_y();
+                SDL_BlitSurface(grid[i + 1][j].get_surface(), NULL, window_surface, &rect);
+                SDL_UpdateWindowSurface(window);
+            }
+            if(i < rows && j - 1 >= 0 && !grid[i][j - 1].get_is_wall() && !is_visited(i, j - 1))
+            {
+                neighbours->push(i, j - 1, i, j);
+                grid[i][j - 1].set_surface("square3.png");
+                rect.x = grid[i][j - 1].get_start_x();
+                rect.y = grid[i][j - 1].get_start_y();
+                SDL_BlitSurface(grid[i][j - 1].get_surface(), NULL, window_surface, &rect);
+                SDL_UpdateWindowSurface(window);
+            }
+            if(i < rows && j + 1 < cols && !grid[i][j + 1].get_is_wall() && !is_visited(i, j + 1))
+            {
+                neighbours->push(i, j + 1, i, j);
+                grid[i][j + 1].set_surface("square3.png");
+                rect.x = grid[i][j + 1].get_start_x();
+                rect.y = grid[i][j + 1].get_start_y();
+                SDL_BlitSurface(grid[i][j + 1].get_surface(), NULL, window_surface, &rect);
+                SDL_UpdateWindowSurface(window);
+            }
+        }
+
+        bool is_target(int x, int y)
+        {
+            return x == target[0] && y == target[1];
+        }
+
+        Node* get_node(int pre_x, int pre_y)
+        {
+            for(int i=0; i<int(visited.size()); i++)
+            {
+                if(visited[i]->get_x() == pre_x && visited[i]->get_y() == pre_y)
+                {
+                    return visited[i];
+                }
+            }
+            return NULL;
+        }
+
+        bool is_visited(int x, int y)
+        {
+            if(is_target(x, y))
+            {
+                is_found = true;
+                return true;
+            }
+            for(int i=0; i<int(visited.size()); i++)
+            {
+                if(visited[i]->get_x() == x && visited[i]->get_y() == y)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+       int get_rows()
+       {
+           return rows;
+       }
+
+       int get_cols()
+       {
+           return cols;
+       }
+};
+
+
 class Visualizer
 {
-    PathFinder *pv;
+    DFS *pv;
     SDL_Window *window;
     SDL_Surface *window_surface;
     bool start_is_set;
@@ -270,10 +462,10 @@ class Visualizer
 
         Visualizer(int rows, int cols)
         {
-            pv = new PathFinder(rows, cols);
+            pv = new DFS(rows, cols);
             window = SDL_CreateWindow("Path Visualizer",
-                                      55,
-                                      55,
+                                      SDL_WINDOWPOS_CENTERED,
+                                      SDL_WINDOWPOS_CENTERED,
                                       MAX_WIDTH,
                                       MAX_HEIGHT,
                                       0
@@ -341,16 +533,6 @@ class Visualizer
                 SDL_UpdateWindowSurface(window);
                 start_is_set = true;
             }
-            else if(button.button == SDL_BUTTON_LEFT && start_is_set)
-            {
-                clicked_cell = get_cell(button.x, button.y);
-                clicked_cell->set_surface("square7.png");
-                rect.x = clicked_cell->get_start_x();
-                rect.y = clicked_cell->get_start_y();
-                SDL_BlitSurface(clicked_cell->get_surface(), NULL, window_surface, &rect);
-                SDL_UpdateWindowSurface(window);
-                clicked_cell->set_is_wall(true);
-            }
             else if(button.button == SDL_BUTTON_RIGHT)
             {
                 clicked_cell = get_cell(button.x, button.y, 2);
@@ -362,6 +544,22 @@ class Visualizer
                 target_is_set = true;
             }
 
+        }
+
+        void make_walls(SDL_MouseButtonEvent &button)
+        {
+            Cell *clicked_cell;
+            SDL_Rect rect;
+            if(button.button == SDL_BUTTON_LEFT && start_is_set)
+            {
+                clicked_cell = get_cell(button.x, button.y);
+                clicked_cell->set_surface("square7.png");
+                rect.x = clicked_cell->get_start_x();
+                rect.y = clicked_cell->get_start_y();
+                SDL_BlitSurface(clicked_cell->get_surface(), NULL, window_surface, &rect);
+                SDL_UpdateWindowSurface(window);
+                clicked_cell->set_is_wall(true);
+            }
         }
 
         void visualize()
@@ -381,11 +579,15 @@ class Visualizer
                     {
                         on_click(event.button);
                     }
+                    else if(event.type == SDL_MOUSEMOTION && start_is_set)
+                    {
+                        make_walls(event.button);
+                    }
                     else if (event.type == SDL_KEYDOWN && start_is_set && target_is_set)
                     {
                         if(event.key.keysym.sym == 13)
                         {
-                            pv->bfs(window_surface, window);
+                            pv->dfs(window_surface, window);
                         }
                     }
                 }
