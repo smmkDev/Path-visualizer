@@ -99,7 +99,6 @@ class BFS
     Queue *neighbours;
     int start[2];
     int target[2];
-
     bool is_found;
     vector<Node*> visited;
 
@@ -426,7 +425,7 @@ class Visualizer
                         else if(flag == 2)
                         {
                             dfs->set_target(i, j);
-                            bfs->set_start(i, j);
+                            bfs->set_target(i, j);
                         }
                         return grid[i][j];
                     }
@@ -494,7 +493,7 @@ class Visualizer
             SDL_Rect rect;
             SDL_Surface *bg = IMG_Load("white-bg.jpg");
             SDL_Surface *ints = IMG_Load("ints.png");
-            rect.x = MAX_WIDTH / 2; rect.y = 90;
+            rect.x = MAX_WIDTH / 1.5; rect.y = 90;
             SDL_BlitSurface(bg, NULL, window_surface, NULL);
             SDL_BlitSurface(ints, NULL, window_surface, &rect);
             SDL_UpdateWindowSurface(window);
