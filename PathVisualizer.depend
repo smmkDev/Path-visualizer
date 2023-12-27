@@ -17,18 +17,22 @@
 1702715824 d:\dsaa\pathvisuakizer\include\queue.h
 	<node.h>
 
-1702717303 source:d:\dsaa\pathvisualizer\main.cpp
+1703665311 source:d:\dsaa\pathvisualizer\main.cpp
 	<iostream>
 	<windows.h>
 	<vector>
 	<math.h>
 	<node.h>
 	<queue.h>
+	<stack.h>
 	<SDL2/SDL.h>
 	<SDL2/SDL_image.h>
 
 1702716311 d:\dsaa\pathvisualizer\include\node.h
 
-1702715824 d:\dsaa\pathvisualizer\include\queue.h
+1703252780 d:\dsaa\pathvisualizer\include\queue.h
+	<node.h>
+
+1703209214 d:\dsaa\pathvisualizer\include\stack.h
 	<node.h>
 

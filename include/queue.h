@@ -6,15 +6,11 @@ class Queue
 {
     Node *front;
     Node *rear;
-    int size;
-    int capacity;
 
     public:
 
-        Queue(int s=0)
+        Queue()
         {
-            size = s;
-            capacity = 0;
             front = NULL;
             rear = NULL;
         }
@@ -24,26 +20,17 @@ class Queue
             return front == NULL;
         }
 
-        bool is_full()
-        {
-            return capacity == size;
-        }
-
         void enqueue(int pos_x, int pos_y, int pred_x, int pred_y)
         {
-            if(!is_full())
+            Node *new_node = new Node(pos_x, pos_y, pred_x, pred_y);
+            if(front == NULL)
             {
-                Node *new_node = new Node(pos_x, pos_y, pred_x, pred_y);
-                if(front == NULL)
-                {
-                    front = rear = new_node;
-                }
-                else
-                {
-                    rear->next = new_node;
-                    rear = rear->next;
-                }
-                capacity++;
+                front = rear = new_node;
+            }
+            else
+            {
+                rear->next = new_node;
+                rear = rear->next;
             }
         }
 
@@ -63,20 +50,9 @@ class Queue
             {
                 Node *temp = front;
                 front = front -> next;
-                capacity--;
                 return temp;
             }
             return NULL;
-        }
-
-        int get_size()
-        {
-            return size;
-        }
-
-        int get_capacity()
-        {
-            return capacity;
         }
 
         bool find(int x, int y)
@@ -91,16 +67,6 @@ class Queue
                 itr = itr->next;
             }
             return false;
-        }
-
-        void display()
-        {
-            Node *itr = front;
-            while(itr != NULL)
-            {
-                std::cout<< "("<< itr->pos_x << "," << itr->pos_y << ")" << "";
-                itr = itr->next;
-            }
         }
 };
 
