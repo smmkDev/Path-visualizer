@@ -133,58 +133,29 @@ class BFS
                 {
                     visited.push_back(current_node);
                 }
-                add_neighbours(current_node->get_x(), current_node->get_y(), cols, rows, grid, renderer, window);
+                add_neighbours(current_node->get_x(), current_node->get_y(), cols, rows, grid);
             }
+            display_traversal(renderer, window, grid);
             display_visited(renderer, window, grid);
         }
 
-        void add_neighbours(int i, int j, int cols, int rows, Cell **grid, SDL_Renderer *renderer, SDL_Window *window)
+        void add_neighbours(int i, int j, int cols, int rows, Cell **grid)
         {
-            SDL_Rect rect;
-            SDL_Texture *texture;
             if(i < rows && j + 1 < cols && !grid[i][j + 1].get_is_wall())
             {
                 neighbours->enqueue(i, j + 1, i, j);
-                grid[i][j + 1].set_surface("bfs.png");
-                rect.x = grid[i][j + 1].get_start_x();
-                rect.y = grid[i][j + 1].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[i][j + 1].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
             }
             if(i < rows && j - 1 >= 0 && !grid[i][j - 1].get_is_wall())
             {
                 neighbours->enqueue(i, j - 1, i, j);
-                grid[i][j - 1].set_surface("bfs.png");
-                rect.x = grid[i][j - 1].get_start_x();
-                rect.y = grid[i][j - 1].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[i][j - 1].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
             }
             if(i - 1 >= 0 && j < cols && !grid[i - 1][j].get_is_wall())
             {
                 neighbours->enqueue(i - 1, j, i, j);
-                grid[i - 1][j].set_surface("bfs.png");
-                rect.x = grid[i - 1][j].get_start_x();
-                rect.y = grid[i - 1][j].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[i - 1][j].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
             }
             if(i + 1 < rows && j < cols && !grid[i + 1][j].get_is_wall())
             {
                 neighbours->enqueue(i + 1, j, i, j);
-                grid[i + 1][j].set_surface("bfs.png");
-                rect.x = grid[i + 1][j].get_start_x();
-                rect.y = grid[i + 1][j].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[i + 1][j].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
             }
         }
 
@@ -205,12 +176,30 @@ class BFS
             return NULL;
         }
 
+        void display_traversal(SDL_Renderer *renderer, SDL_Window *window, Cell **grid)
+        {
+            SDL_Rect rect;
+            SDL_Texture *texture;
+            for(int i=1; i<visited.size(); i++)
+            {
+                grid[visited[i]->get_x()][visited[i]->get_y()].set_surface("bfs.png");
+                rect.x = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_x();
+                rect.y = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_y();
+                rect.w = rect.h = 20;
+                texture = SDL_CreateTextureFromSurface(renderer,  grid[visited[i]->get_x()][visited[i]->get_y()].get_surface());
+                SDL_RenderCopy(renderer, texture, NULL, &rect);
+                SDL_RenderPresent(renderer);
+                Sleep(20);
+
+            }
+        }
+
         bool is_visited(Node *node)
         {
             if(is_target(node->get_x(), node->get_y()))
             {
                 is_found = true;
-                return true;
+                return false;
             }
             for(int i=0; i<int(visited.size()); i++)
             {
@@ -229,6 +218,7 @@ class BFS
            Node* itr = visited[visited.size() - 1];
            while(itr->get_x() != start[0] || itr->get_y() != start[1])
            {
+                itr = get_node(itr->get_pred_x(), itr->get_pred_y());
                 grid[itr->get_x()][itr->get_y()].set_surface("path.png");
                 rect.x = grid[itr->get_x()][itr->get_y()].get_start_x();
                 rect.y = grid[itr->get_x()][itr->get_y()].get_start_y();
@@ -236,7 +226,6 @@ class BFS
                 texture = SDL_CreateTextureFromSurface(renderer,  grid[itr->get_x()][itr->get_y()].get_surface());
                 SDL_RenderCopy(renderer, texture, NULL, &rect);
                 SDL_RenderPresent(renderer);
-                itr = get_node(itr->get_pred_x(), itr->get_pred_y());
                 Sleep(100);
            }
        }
@@ -281,58 +270,30 @@ class DFS
                 {
                     visited.push_back(current_node);
                 }
-                add_neighbours(current_node->get_x(), current_node->get_y(), cols, rows, grid, renderer, window);
+                add_neighbours(current_node->get_x(), current_node->get_y(), cols, rows, grid);
             }
+            display_traversal(renderer, window, grid);
         }
 
-        void add_neighbours(int i, int j, int cols, int rows, Cell **grid, SDL_Renderer *renderer, SDL_Window *window)
+        void add_neighbours(int i, int j, int cols, int rows, Cell **grid)
         {
-            SDL_Rect rect;
-            SDL_Texture *texture;
             if(i - 1 >= 0 && j < cols && !grid[i - 1][j].get_is_wall() && !is_visited(i - 1, j))
             {
                 neighbours->push(i - 1, j, i, j);
-                grid[i - 1][j].set_surface("dfs.png");
-                rect.x = grid[i - 1][j].get_start_x();
-                rect.y = grid[i - 1][j].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[i - 1][j].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
 
             }
             if(i + 1 < rows && j < cols && !grid[i + 1][j].get_is_wall() && !is_visited(i + 1, j))
             {
                 neighbours->push(i + 1, j, i, j);
-                grid[i + 1][j].set_surface("dfs.png");
-                rect.x = grid[i + 1][j].get_start_x();
-                rect.y = grid[i + 1][j].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[i + 1][j].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
             }
             if(i < rows && j - 1 >= 0 && !grid[i][j - 1].get_is_wall() && !is_visited(i, j - 1))
             {
                 neighbours->push(i, j - 1, i, j);
-                grid[i][j - 1].set_surface("dfs.png");
-                rect.x = grid[i][j - 1].get_start_x();
-                rect.y = grid[i][j - 1].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[i][j - 1].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
             }
             if(i < rows && j + 1 < cols && !grid[i][j + 1].get_is_wall() && !is_visited(i, j + 1))
             {
                 neighbours->push(i, j + 1, i, j);
-                grid[i][j + 1].set_surface("dfs.png");
-                rect.x = grid[i][j + 1].get_start_x();
-                rect.y = grid[i][j + 1].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[i][j + 1].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);            }
+            }
         }
 
         bool is_target(int x, int y)
@@ -350,6 +311,24 @@ class DFS
                 }
             }
             return NULL;
+        }
+
+        void display_traversal(SDL_Renderer *renderer, SDL_Window *window, Cell **grid)
+        {
+            SDL_Rect rect;
+            SDL_Texture *texture;
+            for(int i=1; i<visited.size(); i++)
+            {
+                grid[visited[i]->get_x()][visited[i]->get_y()].set_surface("dfs.png");
+                rect.x = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_x();
+                rect.y = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_y();
+                rect.w = rect.h = 20;
+                texture = SDL_CreateTextureFromSurface(renderer,  grid[visited[i]->get_x()][visited[i]->get_y()].get_surface());
+                SDL_RenderCopy(renderer, texture, NULL, &rect);
+                SDL_RenderPresent(renderer);
+                Sleep(20);
+
+            }
         }
 
         bool is_visited(int x, int y)
@@ -567,7 +546,8 @@ class Visualizer
 
 int main(int argc, char *argv[])
 {
-    Visualizer v(15, 15);
+    Visualizer v(50, 49);
     v.visualize();
     return 0;
 }
+
