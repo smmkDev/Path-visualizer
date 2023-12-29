@@ -20,6 +20,7 @@ class Cell
     int start_y;
     int finish_y;
     bool is_wall;
+    bool is_visited;
 
     public:
 
@@ -30,7 +31,8 @@ class Cell
             finish_x = fin_x;
             start_y = st_y;
             finish_y = fin_y;
-            is_wall = false;
+            is_wall = is_visited = false;
+
         }
 
         void set_start_x(int st_x)
@@ -51,6 +53,11 @@ class Cell
         void set_finish_y(int fin_y)
         {
             finish_y = fin_y;
+        }
+
+        void set_is_visited(bool val)
+        {
+            is_visited = val;
         }
 
         void set_surface(string s)
@@ -86,6 +93,11 @@ class Cell
         int get_finish_y()
         {
             return finish_y;
+        }
+
+        bool get_is_visited()
+        {
+            return is_visited;
         }
 
         SDL_Surface *get_surface()
@@ -129,9 +141,11 @@ class BFS
             while(!is_found)
             {
                 current_node = neighbours->dequeue();
-                if(!is_visited(current_node))
+                visited.push_back(current_node);
+                if(is_target(current_node->get_x(), current_node->get_y()))
                 {
-                    visited.push_back(current_node);
+                    is_found = true;
+                    break;
                 }
                 add_neighbours(current_node->get_x(), current_node->get_y(), cols, rows, grid);
             }
@@ -141,21 +155,38 @@ class BFS
 
         void add_neighbours(int i, int j, int cols, int rows, Cell **grid)
         {
-            if(i < rows && j + 1 < cols && !grid[i][j + 1].get_is_wall())
+            if(i < rows && j + 1 < cols)
             {
-                neighbours->enqueue(i, j + 1, i, j);
+                if(!grid[i][j + 1].get_is_visited() && !grid[i][j + 1].get_is_wall())
+                {
+                    neighbours->enqueue(i, j + 1, i, j);
+                    grid[i][j + 1].set_is_visited(true);
+                }
             }
-            if(i < rows && j - 1 >= 0 && !grid[i][j - 1].get_is_wall())
+            if(i < rows && j - 1 >= 0)
             {
-                neighbours->enqueue(i, j - 1, i, j);
+                 if(!grid[i][j - 1].get_is_visited() && !grid[i][j - 1].get_is_wall())
+                {
+
+                    neighbours->enqueue(i, j - 1, i, j);
+                    grid[i][j - 1].set_is_visited(true);
+                }
             }
-            if(i - 1 >= 0 && j < cols && !grid[i - 1][j].get_is_wall())
+            if(i - 1 >= 0 && j < cols)
             {
-                neighbours->enqueue(i - 1, j, i, j);
+                if(!grid[i - 1][j].get_is_visited() && !grid[i - 1][j].get_is_wall())
+                {
+                    neighbours->enqueue(i - 1, j, i, j);
+                    grid[i - 1][j].set_is_visited(true);
+                }
             }
-            if(i + 1 < rows && j < cols && !grid[i + 1][j].get_is_wall())
+            if(i + 1 < rows && j < cols)
             {
-                neighbours->enqueue(i + 1, j, i, j);
+                if(!grid[i + 1][j].get_is_visited() && !grid[i + 1][j].get_is_wall())
+                {
+                    neighbours->enqueue(i + 1, j, i, j);
+                    grid[i + 1][j].set_is_visited(true);
+                }
             }
         }
 
@@ -192,23 +223,6 @@ class BFS
                 Sleep(20);
 
             }
-        }
-
-        bool is_visited(Node *node)
-        {
-            if(is_target(node->get_x(), node->get_y()))
-            {
-                is_found = true;
-                return false;
-            }
-            for(int i=0; i<int(visited.size()); i++)
-            {
-                if(visited[i]->get_x() == node->get_x() && visited[i]->get_y() == node->get_y())
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
        void display_visited(SDL_Renderer *renderer, SDL_Window *window, Cell **grid)
@@ -550,4 +564,3 @@ int main(int argc, char *argv[])
     v.visualize();
     return 0;
 }
-
