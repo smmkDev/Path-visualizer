@@ -8,8 +8,8 @@
 #include<SDL2/SDL.h>
 #include<SDL2/SDL_image.h>
 
-#define MAX_WIDTH 590
-#define MAX_HEIGHT 600
+#define MAX_WIDTH 585
+#define MAX_HEIGHT 595
 using namespace std;
 
 class Cell
@@ -104,6 +104,11 @@ class Cell
         {
             return img;
         }
+
+        ~Cell()
+        {
+            SDL_FreeSurface(img);
+        }
 };
 
 class BFS
@@ -151,6 +156,7 @@ class BFS
             }
             display_traversal(renderer, window, grid);
             display_visited(renderer, window, grid);
+            delete current_node;
         }
 
         void add_neighbours(int i, int j, int cols, int rows, Cell **grid)
@@ -195,6 +201,11 @@ class BFS
             return x == target[0] && y == target[1];
         }
 
+        bool is_start(int x, int y)
+        {
+            return x == start[0] && y == start[1];
+        }
+
         Node* get_node(int pre_x, int pre_y)
         {
             for(int i=0; i<int(visited.size()); i++)
@@ -213,16 +224,20 @@ class BFS
             SDL_Texture *texture;
             for(int i=1; i<visited.size(); i++)
             {
-                grid[visited[i]->get_x()][visited[i]->get_y()].set_surface("bfs.png");
-                rect.x = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_x();
-                rect.y = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[visited[i]->get_x()][visited[i]->get_y()].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
-                Sleep(20);
+                if(!is_start(visited[i]->get_x(), visited[i]->get_y()) && !is_target(visited[i]->get_x(), visited[i]->get_y()))
+                {
+                    grid[visited[i]->get_x()][visited[i]->get_y()].set_surface("bfs.png");
+                    rect.x = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_x();
+                    rect.y = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_y();
+                    rect.w = rect.h = 20;
+                    texture = SDL_CreateTextureFromSurface(renderer,  grid[visited[i]->get_x()][visited[i]->get_y()].get_surface());
+                    SDL_RenderCopy(renderer, texture, NULL, &rect);
+                    SDL_RenderPresent(renderer);
+                    Sleep(20);
+                }
 
             }
+            SDL_DestroyTexture(texture);
         }
 
        void display_visited(SDL_Renderer *renderer, SDL_Window *window, Cell **grid)
@@ -240,8 +255,18 @@ class BFS
                 texture = SDL_CreateTextureFromSurface(renderer,  grid[itr->get_x()][itr->get_y()].get_surface());
                 SDL_RenderCopy(renderer, texture, NULL, &rect);
                 SDL_RenderPresent(renderer);
+                if(is_start(itr->get_pred_x(), itr->get_pred_y()))
+                {
+                    break;
+                }
                 Sleep(100);
            }
+           SDL_DestroyTexture(texture);
+       }
+
+       ~BFS()
+       {
+            delete neighbours;
        }
 };
 
@@ -280,39 +305,50 @@ class DFS
             while(!is_found)
             {
                 current_node = neighbours->pop();
-                if(!is_visited(current_node->get_x(), current_node->get_y()))
+                visited.push_back(current_node);
+                if(is_target(current_node->get_x(), current_node->get_y()))
                 {
-                    visited.push_back(current_node);
+                    is_found = true;
+                    break;
                 }
                 add_neighbours(current_node->get_x(), current_node->get_y(), cols, rows, grid);
             }
             display_traversal(renderer, window, grid);
+            delete current_node;
         }
 
         void add_neighbours(int i, int j, int cols, int rows, Cell **grid)
         {
-            if(i - 1 >= 0 && j < cols && !grid[i - 1][j].get_is_wall() && !is_visited(i - 1, j))
+            if(i - 1 >= 0 && j < cols && !grid[i - 1][j].get_is_wall() && !grid[i - 1][j].get_is_visited())
             {
                 neighbours->push(i - 1, j, i, j);
-
+                grid[i - 1][j].set_is_visited(true);
             }
-            if(i + 1 < rows && j < cols && !grid[i + 1][j].get_is_wall() && !is_visited(i + 1, j))
+            if(i + 1 < rows && j < cols && !grid[i + 1][j].get_is_wall() && !grid[i + 1][j].get_is_visited())
             {
                 neighbours->push(i + 1, j, i, j);
+                grid[i + 1][j].set_is_visited(true);
             }
-            if(i < rows && j - 1 >= 0 && !grid[i][j - 1].get_is_wall() && !is_visited(i, j - 1))
+            if(i < rows && j - 1 >= 0 && !grid[i][j - 1].get_is_wall() && !grid[i][j - 1].get_is_visited())
             {
                 neighbours->push(i, j - 1, i, j);
+                grid[i][j - 1].set_is_visited(true);
             }
-            if(i < rows && j + 1 < cols && !grid[i][j + 1].get_is_wall() && !is_visited(i, j + 1))
+            if(i < rows && j + 1 < cols && !grid[i][j + 1].get_is_wall() && !grid[i][j + 1].get_is_visited())
             {
                 neighbours->push(i, j + 1, i, j);
+                grid[i][j + 1].set_is_visited(true);
             }
         }
 
         bool is_target(int x, int y)
         {
             return x == target[0] && y == target[1];
+        }
+
+        bool is_start(int x, int y)
+        {
+            return x == start[0] && y == start[1];
         }
 
         Node* get_node(int pre_x, int pre_y)
@@ -333,33 +369,24 @@ class DFS
             SDL_Texture *texture;
             for(int i=1; i<visited.size(); i++)
             {
-                grid[visited[i]->get_x()][visited[i]->get_y()].set_surface("dfs.png");
-                rect.x = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_x();
-                rect.y = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer,  grid[visited[i]->get_x()][visited[i]->get_y()].get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
-                Sleep(20);
+                if(!is_start(visited[i]->get_x(), visited[i]->get_y()) && !is_target(visited[i]->get_x(), visited[i]->get_y()))
+                {
+                    grid[visited[i]->get_x()][visited[i]->get_y()].set_surface("dfs.png");
+                    rect.x = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_x();
+                    rect.y = grid[visited[i]->get_x()][visited[i]->get_y()].get_start_y();
+                    rect.w = rect.h = 20;
+                    texture = SDL_CreateTextureFromSurface(renderer,  grid[visited[i]->get_x()][visited[i]->get_y()].get_surface());
+                    SDL_RenderCopy(renderer, texture, NULL, &rect);
+                    SDL_RenderPresent(renderer);
+                    Sleep(20);
+                }
 
             }
         }
 
-        bool is_visited(int x, int y)
+        ~DFS()
         {
-            if(is_target(x, y))
-            {
-                is_found = true;
-                return true;
-            }
-            for(int i=0; i<int(visited.size()); i++)
-            {
-                if(visited[i]->get_x() == x && visited[i]->get_y() == y)
-                {
-                    return true;
-                }
-            }
-            return false;
+            delete neighbours;
         }
 };
 
@@ -403,7 +430,7 @@ class Visualizer
 
         void create_grid()
         {
-            SDL_Rect cells = {0, 50, 20, 20};
+            SDL_Rect cells = {60, 49, 20, 20};
             for(int i=0; i<rows; i++)
             {
                 for(int j=0; j<cols; j++)
@@ -417,7 +444,7 @@ class Visualizer
                     grid[i][j].set_finish_x(cells.x);
                     grid[i][j].set_finish_y(cells.y + 22);
                 }
-                cells.x = 0;
+                cells.x = 60;
                 cells.y += 22;
             }
         }
@@ -455,6 +482,14 @@ class Visualizer
         {
             Cell clicked_cell;
             SDL_Rect rect;
+            if(button.x < 60 || button.x > 585)
+            {
+                return;
+            }
+            if(button.y < 49 || button.y > 595)
+            {
+                return;
+            }
             if(button.button == SDL_BUTTON_LEFT && !start_is_set)
             {
                 clicked_cell = get_cell(button.x, button.y, 1);
@@ -514,9 +549,30 @@ class Visualizer
         {
             SDL_Surface *surface = IMG_Load("top.png");
             SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-            SDL_Rect rect = {0, 0, 600, 50};
+            SDL_Rect rect = {0, 0, 600, 600};
             SDL_RenderCopy(renderer, texture, NULL, &rect);
             SDL_RenderPresent(renderer);
+            SDL_FreeSurface(surface);
+            SDL_DestroyTexture(texture);
+        }
+
+        void reset()
+        {
+            start_is_set = target_is_set = false;
+            delete bfs;
+            delete dfs;
+            for(int i=0; i<rows; i++)
+            {
+                delete[] grid[i];
+            }
+            delete[] grid;
+            bfs = new BFS;
+            dfs = new DFS;
+            grid = new Cell*[rows];
+            for(int i=0; i<rows; i++)
+            {
+                grid[i] = new Cell[cols];
+            }
         }
 
         void visualize()
@@ -543,6 +599,12 @@ class Visualizer
                         {
                             dfs->dfs(renderer, window, cols, rows, grid);
                         }
+                        else if (event.key.keysym.sym == SDLK_r)
+                        {
+                            render_menu();
+                            reset();
+                            create_grid();
+                        }
                     }
                     else if(event.type == SDL_MOUSEBUTTONUP)
                     {
@@ -556,11 +618,25 @@ class Visualizer
             }
        }
 
+       ~Visualizer()
+       {
+           delete bfs;
+           delete dfs;
+           for(int i=0; i<rows; i++)
+           {
+            delete grid[i];
+           }
+           delete[] grid;
+           SDL_DestroyRenderer(renderer);
+           SDL_DestroyTexture(texture);
+           SDL_DestroyWindow(window);
+       }
+
 };
 
 int main(int argc, char *argv[])
 {
-    Visualizer v(50, 49);
+    Visualizer v(25, 24);
     v.visualize();
     return 0;
 }
