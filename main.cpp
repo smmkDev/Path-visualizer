@@ -21,6 +21,8 @@ class Cell
     int finish_y;
     bool is_wall;
     bool is_visited;
+    bool is_start;
+    bool is_target;
 
     public:
 
@@ -31,7 +33,7 @@ class Cell
             finish_x = fin_x;
             start_y = st_y;
             finish_y = fin_y;
-            is_wall = is_visited = false;
+            is_wall = is_visited = is_start = is_target = false;
 
         }
 
@@ -58,6 +60,16 @@ class Cell
         void set_is_visited(bool val)
         {
             is_visited = val;
+        }
+
+        void set_is_start(bool val)
+        {
+            is_start = val;
+        }
+
+        void set_is_target(bool val)
+        {
+            is_target = val;
         }
 
         void set_surface(string s)
@@ -100,15 +112,25 @@ class Cell
             return is_visited;
         }
 
+        bool get_is_start()
+        {
+            return is_start;
+        }
+
+        bool get_is_target()
+        {
+            return is_target;
+        }
+
         SDL_Surface *get_surface()
         {
             return img;
         }
 
-        ~Cell()
-        {
-            SDL_FreeSurface(img);
-        }
+//        ~Cell()
+//        {
+//            SDL_FreeSurface(img);
+//        }
 };
 
 class BFS
@@ -146,6 +168,19 @@ class BFS
             while(!is_found)
             {
                 current_node = neighbours->dequeue();
+                if(current_node == NULL)
+                {
+                    SDL_Rect rect;
+                    rect.x = 70; rect.y = 250;
+                    rect.w = 500; rect.h = 50;
+                    SDL_Surface *surface = IMG_Load("no_path.png");
+                    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+                    SDL_RenderCopy(renderer, texture, NULL, &rect);
+                    SDL_RenderPresent(renderer);
+                    SDL_FreeSurface(surface);
+                    SDL_DestroyTexture(texture);
+                    return;
+                }
                 visited.push_back(current_node);
                 if(is_target(current_node->get_x(), current_node->get_y()))
                 {
@@ -305,6 +340,19 @@ class DFS
             while(!is_found)
             {
                 current_node = neighbours->pop();
+                if(current_node == NULL)
+                {
+                    SDL_Rect rect;
+                    rect.x = 70; rect.y = 250;
+                    rect.w = 500; rect.h = 50;
+                    SDL_Surface *surface = IMG_Load("no_path.png");
+                    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+                    SDL_RenderCopy(renderer, texture, NULL, &rect);
+                    SDL_RenderPresent(renderer);
+                    SDL_FreeSurface(surface);
+                    SDL_DestroyTexture(texture);
+                    return;
+                }
                 visited.push_back(current_node);
                 if(is_target(current_node->get_x(), current_node->get_y()))
                 {
@@ -462,11 +510,13 @@ class Visualizer
                         {
                             dfs->set_start(i, j);
                             bfs->set_start(i, j);
+                            grid[i][j].set_is_start(true);
                         }
                         else if(flag == 2)
                         {
                             dfs->set_target(i, j);
                             bfs->set_target(i, j);
+                            grid[i][j].set_is_start(true);
                         }
                         else
                         {
@@ -492,38 +542,48 @@ class Visualizer
             }
             if(button.button == SDL_BUTTON_LEFT && !start_is_set)
             {
-                clicked_cell = get_cell(button.x, button.y, 1);
-                clicked_cell.set_surface("start.png");
-                rect.x = clicked_cell.get_start_x();
-                rect.y = clicked_cell.get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer, clicked_cell.get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
-                start_is_set = true;
+                if(!clicked_cell.get_is_target())
+                {
+                    clicked_cell = get_cell(button.x, button.y, 1);
+                    clicked_cell.set_surface("start.png");
+                    rect.x = clicked_cell.get_start_x();
+                    rect.y = clicked_cell.get_start_y();
+                    rect.w = rect.h = 20;
+                    texture = SDL_CreateTextureFromSurface(renderer, clicked_cell.get_surface());
+                    SDL_RenderCopy(renderer, texture, NULL, &rect);
+                    SDL_RenderPresent(renderer);
+                    start_is_set = true;
+                }
             }
             else if(button.button == SDL_BUTTON_LEFT && start_is_set)
             {
+
                 clicked_cell = get_cell(button.x, button.y);
-                clicked_cell.set_surface("walls.png");
-                rect.x = clicked_cell.get_start_x();
-                rect.y = clicked_cell.get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer, clicked_cell.get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
+                if(!clicked_cell.get_is_start() && !clicked_cell.get_is_target())
+                {
+                    clicked_cell.set_surface("walls.png");
+                    rect.x = clicked_cell.get_start_x();
+                    rect.y = clicked_cell.get_start_y();
+                    rect.w = rect.h = 20;
+                    texture = SDL_CreateTextureFromSurface(renderer, clicked_cell.get_surface());
+                    SDL_RenderCopy(renderer, texture, NULL, &rect);
+                    SDL_RenderPresent(renderer);
+                }
             }
-            else if(button.button == SDL_BUTTON_RIGHT)
+            else if(button.button == SDL_BUTTON_RIGHT && !target_is_set)
             {
-                clicked_cell = get_cell(button.x, button.y, 2);
-                clicked_cell.set_surface("end.png");
-                rect.x = clicked_cell.get_start_x();
-                rect.y = clicked_cell.get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer, clicked_cell.get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
-                target_is_set = true;
+                if(!clicked_cell.get_is_start())
+                {
+                    clicked_cell = get_cell(button.x, button.y, 2);
+                    clicked_cell.set_surface("end.png");
+                    rect.x = clicked_cell.get_start_x();
+                    rect.y = clicked_cell.get_start_y();
+                    rect.w = rect.h = 20;
+                    texture = SDL_CreateTextureFromSurface(renderer, clicked_cell.get_surface());
+                    SDL_RenderCopy(renderer, texture, NULL, &rect);
+                    SDL_RenderPresent(renderer);
+                    target_is_set = true;
+                }
             }
 
         }
@@ -532,16 +592,27 @@ class Visualizer
         {
             Cell clicked_cell;
             SDL_Rect rect;
+            if(button.x < 60 || button.x > 585)
+            {
+                return;
+            }
+            if(button.y < 49 || button.y > 595)
+            {
+                return;
+            }
             if(button.button == SDL_BUTTON_LEFT && start_is_set)
             {
                 clicked_cell = get_cell(button.x, button.y);
-                clicked_cell.set_surface("walls.png");
-                rect.x = clicked_cell.get_start_x();
-                rect.y = clicked_cell.get_start_y();
-                rect.w = rect.h = 20;
-                texture = SDL_CreateTextureFromSurface(renderer, clicked_cell.get_surface());
-                SDL_RenderCopy(renderer, texture, NULL, &rect);
-                SDL_RenderPresent(renderer);
+                if(!clicked_cell.get_is_start() && !clicked_cell.get_is_target())
+                {
+                    clicked_cell.set_surface("walls.png");
+                    rect.x = clicked_cell.get_start_x();
+                    rect.y = clicked_cell.get_start_y();
+                    rect.w = rect.h = 20;
+                    texture = SDL_CreateTextureFromSurface(renderer, clicked_cell.get_surface());
+                    SDL_RenderCopy(renderer, texture, NULL, &rect);
+                    SDL_RenderPresent(renderer);
+                }
             }
         }
 
@@ -559,13 +630,13 @@ class Visualizer
         void reset()
         {
             start_is_set = target_is_set = false;
-            delete bfs;
-            delete dfs;
             for(int i=0; i<rows; i++)
             {
                 delete[] grid[i];
             }
             delete[] grid;
+            delete bfs;
+            delete dfs;
             bfs = new BFS;
             dfs = new DFS;
             grid = new Cell*[rows];
@@ -601,8 +672,8 @@ class Visualizer
                         }
                         else if (event.key.keysym.sym == SDLK_r)
                         {
-                            render_menu();
                             reset();
+                            render_menu();
                             create_grid();
                         }
                     }

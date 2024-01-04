@@ -40,9 +40,13 @@ class Stack
 
         Node* pop()
         {
-            Node *temp = top;
-            top = top->next;
-            return temp;
+            if(top != NULL)
+            {
+                Node *temp = top;
+                top = top->next;
+                return temp;
+            }
+            return top;
         }
 
 };
