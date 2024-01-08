@@ -126,11 +126,6 @@ class Cell
         {
             return img;
         }
-
-//        ~Cell()
-//        {
-//            SDL_FreeSurface(img);
-//        }
 };
 
 class BFS
